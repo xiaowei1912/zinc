@@ -1,7 +1,5 @@
 # Zinc programming language
 
-<img src="./zinc-logo.png" width="30%" align=center />
-
 Zinc is a programming language inspired by Rust, prioritizes simplicity over performance, with memory-safety and thread-safety fully preserved.
 
 It is simpler than Rust by **removing ownership types and borrow checker**, trading off performance optimization. Meanwhile, Zinc also conforms "aliasing xor mutation" rule.
@@ -199,3 +197,15 @@ Note: Only Linux/x64 platform is supported.
 4. run `python x.py build`
 
 GitHub Actions on `ubuntu-latest` caches LLVM and runs this sequence automatically (see `.github/workflows/ci.yml`).
+
+## tests
+
+```
+python x.py test
+```
+
+Requires `./out/stage1/bin/zinc` from `python x.py build`. See `tests/` and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md). Design discussion belongs in [zinc-lang/zinc-design](https://github.com/zinc-lang/zinc-design).
