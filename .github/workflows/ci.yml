@@ -17,6 +17,7 @@ jobs:
     timeout-minutes: 360
     env:
       ZINC_LLVM_BUILD_TYPE: Release
+      PYTHONUNBUFFERED: "1"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,7 +27,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build g++ python3 zlib1g-dev libzstd-dev unzip
+            cmake ninja-build g++ clang python3 zlib1g-dev libzstd-dev unzip
 
       - name: LLVM pin
         id: llvm-pin
@@ -37,10 +38,22 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: out/llvm
-          key: llvm-${{ runner.os }}-release-host-${{ steps.llvm-pin.outputs.sha }}
+          # optllc suffix: Zinc codegen needs out/llvm/bin/{opt,llc}, not libs only.
+          key: llvm-${{ runner.os }}-release-host-optllc-${{ steps.llvm-pin.outputs.sha }}
+
+      - name: LLVM tools present
+        id: llvm-ready
+        run: |
+          if [[ -x out/llvm/bin/opt && -x out/llvm/bin/llc ]]; then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "LLVM install missing opt/llc; will rebuild"
+            rm -rf out/llvm
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Free disk for LLVM build
-        if: steps.llvm-cache.outputs.cache-hit != 'true'
+        if: steps.llvm-ready.outputs.hit != 'true'
         run: |
           df -h
           sudo rm -rf \
@@ -54,23 +67,23 @@ jobs:
           df -h
 
       - name: Checkout LLVM submodule
-        if: steps.llvm-cache.outputs.cache-hit != 'true'
+        if: steps.llvm-ready.outputs.hit != 'true'
         run: git submodule update --init --depth 1 third_party/llvm-project
 
       - name: Build LLVM
-        if: steps.llvm-cache.outputs.cache-hit != 'true'
+        if: steps.llvm-ready.outputs.hit != 'true'
         run: python3 x.py build-llvm
 
       - name: Drop LLVM build tree
-        if: steps.llvm-cache.outputs.cache-hit != 'true'
+        if: steps.llvm-ready.outputs.hit != 'true'
         run: rm -rf build-llvm
 
       - name: Save LLVM cache
-        if: steps.llvm-cache.outputs.cache-hit != 'true'
+        if: steps.llvm-ready.outputs.hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: out/llvm
-          key: llvm-${{ runner.os }}-release-host-${{ steps.llvm-pin.outputs.sha }}
+          key: llvm-${{ runner.os }}-release-host-optllc-${{ steps.llvm-pin.outputs.sha }}
 
       - name: Fetch stage0
         run: python3 x.py setup-stage0
