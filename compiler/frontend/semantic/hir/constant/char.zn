@@ -48,17 +48,16 @@ impl CharCValue {
         } else { // utf8
             let first = tok_str.index(0);
             let mut char_len: UInt = 0;
-            if first.bit_and(0x80_u8) == 0 {  // 0xxxxxxx (1字节)
+            if first < 0x80_u8 {
                 char_len = 1;
                 codepoint = first as UInt32;
-            }
-            else if first.bit_and(0xE0_u8) == 0xC0_u8 {  // 110xxxxx (2字节)
+            } else if first < 0xE0_u8 {
                 char_len = 2;
                 codepoint = first.bit_and(0x1F_u8) as UInt32;
-            } else if first.bit_and(0xF0_u8) == 0xE0_u8 {  // 1110xxxx (3字节)
+            } else if first < 0xF0_u8 {
                 char_len = 3;
                 codepoint = first.bit_and(0x0F_u8) as UInt32;
-            } else if first.bit_and(0xF8_u8) == 0xF0_u8 {  // 11110xxx (4字节)
+            } else if first < 0xF8_u8 {
                 char_len = 4;
                 codepoint = first.bit_and(0x07_u8) as UInt32;
             }
